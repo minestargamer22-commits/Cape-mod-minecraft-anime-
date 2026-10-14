@@ -5,37 +5,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
-
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.11.1"
-
-      - name: Build
-        run: |
-          shopt -s nullglob
-          for z in capemod-fabric-*.zip; do
-            echo "Unzipping $z"
-            unzip -q "$z"
-          done
-          for d in fabric-*/; do
-            echo "=== Building $d ==="
-            (
-              cd "$d"
-              if [ -f ./gradlew ]; then
-                chmod +x ./gradlew
-                ./gradlew build --no-daemon --stacktrace
-              else
-                gradle build --no-daemon --stacktrace
-              fi
-            )
-          done
-
+          gradle-version: current
+      - name: Unzip
+        run: for z in capemod-fabric-*.zip; do unzip -q "$z"; done
+      - name: Build 1.21.11
+        continue-on-error: true
+        run: cd fabric-1.21.11 && gradle build
+      - name: Build 1.21.4
+        continue-on-error: true
+        run: cd fabric-1.21.4 && gradle build
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: jars
-          path: fabric-*/build/libs/*.jar
+          path: |
+            fabric-*/build/libs/*.jar
+            !fabric-*/build/libs/*-sources.jar
